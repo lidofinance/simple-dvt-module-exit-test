@@ -1,0 +1,38 @@
+version: '3.7'
+services:
+  proxy-server:
+    build: simple-proxy/.
+    container_name: proxy-server
+    restart: unless-stopped
+    environment:
+      - CL_NODE_URL=${CL_NODE_URL}
+    ports:
+      - 3000:3000
+  validator-ejector:
+    depends_on: 
+      - proxy-server
+    platform: linux/amd64
+    image: lidofinance/validator-ejector@sha256:e3acb5eb1bab5a871bf70e9bb736e1a1016567e1846a9b96c27232c84643597a
+    container_name: validator-ejector
+    restart: unless-stopped
+    environment:
+      # host.docker.internal for mac or 127.0.0.1 for linux
+      - EXECUTION_NODE=http://host.docker.internal:8545
+      - CONSENSUS_NODE=http://proxy-server:3000
+      - LOCATOR_ADDRESS=0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb
+      - STAKING_MODULE_ID=2
+      - OPERATOR_ID=0
+      - MESSAGES_LOCATION=/app/messages
+      - MESSAGES_PASSWORD=12345678
+      - ORACLE_ADDRESSES_ALLOWLIST=["0x140Bd8FbDc884f48dA7cb1c09bE8A2fAdfea776E","0x1d0813bf088BE3047d827D98524fBf779Bc25F00","0x404335BcE530400a5814375E7Ec1FB55fAff3eA2","0x946D3b081ed19173dC83Cd974fC69e1e760B7d78","0x007DE4a5F7bc37E2F26c0cb2E8A95006EE9B89b5","0xEC4BfbAF681eb505B94E4a7849877DC6c600Ca3A","0x61c91ECd902EB56e314bB2D5c5C07785444Ea1c8","0x1Ca0fEC59b86F549e1F1184d97cb47794C8Af58d","0xA7410857ABbf75043d61ea54e07D57A6EB6EF186"]
+      - BLOCKS_PRELOAD=1000
+      - HTTP_PORT=8989
+      - LOGGER_LEVEL=info
+      - LOGGER_FORMAT=simple
+      - LOGGER_SECRETS=["MESSAGES_PASSWORD"]
+      - DISABLE_SECURITY_DONT_USE_IN_PRODUCTION=true
+      - JOB_INTERVAL=10000
+    ports:
+      - 8989:8989
+    volumes:
+      - ./ejector-messages:/app/messages
